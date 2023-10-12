@@ -20,13 +20,9 @@ axios.interceptors.request.use(
       }
   );
   
-  
-
-
-bot.onText(/\/hentai/, function onLoveText(msg) {
-  bot.sendMessage(msg.chat.id, 'Are you a hetai?');
+bot.onText(/\/start/, function onLoveText(msg) {
+  bot.sendMessage(msg.chat.id, 'Hello');
 });
-
 
 bot.onText(/\/echo (.+)/, (msg, match) => {
 
