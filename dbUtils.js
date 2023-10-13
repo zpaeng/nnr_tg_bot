@@ -14,7 +14,7 @@
  };
   
  DB.printErrorInfo = function(err){
-     console.log("Error Message:" + err.message + " ErrorNumber:" + errno);
+     console.log("Error Message:" + err.message + " ErrorNumber:" + err.errno);
  };
   
  DB.SqliteDB.prototype.createTable = function(sql){
@@ -40,22 +40,23 @@
      });
  };
   
- DB.SqliteDB.prototype.queryData = function(sql, callback){
-     DB.db.all(sql, function(err, rows){
-         if(null != err){
-             DB.printErrorInfo(err);
-             return;
-         }
-  
-         /// deal query data.
-         if(callback){
-             callback(rows);
-         }
-     });
+ DB.SqliteDB.prototype.queryData = function(sql){
+    return new Promise((resolve, reject) => {
+        DB.db.all(sql, function(err, rows){
+          if (err) {
+            DB.printErrorInfo(err);
+            console.log(err)
+            reject(err)
+          } else {
+            resolve(rows)
+          }
+        })
+      })
  };
   
  DB.SqliteDB.prototype.executeSql = function(sql){
      DB.db.run(sql, function(err){
+        console.log(sql)
          if(null != err){
              DB.printErrorInfo(err);
          }
