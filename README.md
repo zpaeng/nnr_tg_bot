@@ -19,8 +19,9 @@ npm start
 /gettg|获取TGid|
 /usertemp|用户操作模板(管理员)|
 /adduser|创建用户(管理员)|/adduser 19542314+300+2023-10-13 14:28:00+30
-/resetUser|重置用户流量|/resetUser 19542314
+/resetuser|重置用户流量|/resetuser 19542314
 /deluser|删除用户(管理员)|/deluser 19542314
+/alluser|查询所有用户(管理员)
 /traffic|流量查询
 /servers|获取所有可使用节点
 /rules|获取用户转发列表

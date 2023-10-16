@@ -161,19 +161,20 @@ bot.onText(/\/adduser (.+)/, (msg, match) => {
   });
 });
 
-bot.onText(/\/resetuser (.+)/, (msg, match) => {
+bot.onText(/\/resetuser (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const resp = match[1];
   if (chatId != tgAdminId) {
     bot.sendMessage(chatId, '非管理员，无法刷新流量');
     return
   }
-  if(resp) {
+  if(!resp) {
     bot.sendMessage(chatId, '格式错误');
     return
   }
-  resetUser(chatId, moment().format('YYYY-MM-DD HH:mm:ss'))
-  listUser().then(rows => {
+  let timedate = moment().format('YYYY-MM-DD HH:mm:ss')
+  resetUser(resp, timedate)
+  await listUser().then(rows => {
     dataDealUserList(chatId, rows);
   });
 });
@@ -216,6 +217,17 @@ bot.onText(/\/deluser (.+)/, (msg, match) => {
   listUser().then(rows => {
     // console.log(chatId)
     // console.log(rows)
+    dataDealUserList(chatId, rows);
+  });
+});
+
+bot.onText(/\/alluser/, msg => {
+  const chatId = msg.chat.id;
+  if (chatId != tgAdminId) {
+    bot.sendMessage(chatId, '非管理员，无法删除');
+    return
+  }
+  listUser().then(rows => {
     dataDealUserList(chatId, rows);
   });
 });
@@ -425,7 +437,10 @@ async function timeTraffic() {
   let ruleArr = await timeRules()
   let userArr = await timeUser()
   let urRelateArr = await timeUserRuleRelate()
-  userArr.forEach(item => {
+  for(var i = 0; i < userArr.length; ++i){
+    let item = userArr[i]
+    let endTime = moment(item.crteTime).add(7, 'd')
+    let startTime = moment()
     let ruleIdArr = []
     urRelateArr.forEach(ur => {
       if (item.tgId == ur.tgId) {
@@ -433,6 +448,12 @@ async function timeTraffic() {
       }
     })
     if (ruleIdArr.length > 0) {
+      if(endTime.isBefore(startTime)) {
+        ruleIdArr.forEach(rui => {
+          timeDelRule(item.tgId, rui)
+        })
+        continue
+      }
       let arr = []
       ruleArr.forEach(rule => {
         if (ruleIdArr.includes(rule.rid)) {
@@ -456,7 +477,7 @@ async function timeTraffic() {
         }
       }
     }
-  })
+  }
 }
 
 setInterval(() => {
