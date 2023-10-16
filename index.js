@@ -92,7 +92,7 @@ function insertRule(tgId, ruleId) {
 function deleteRule(tgId, ruleId) {
   let sql = `delete from rule_relate where tg_id=${tgId}`;
   if (ruleId) {
-    sql += ` and rule_id=${ruleId}`;
+    sql += ` and rule_id='${ruleId}'`;
   }
   sqliteDB.executeSql(sql)
 }
@@ -224,7 +224,7 @@ bot.onText(/\/traffic/, msg => {
   const chatId = msg.chat.id;
   listUser().then(rows => {
     let user = rows.find(row => row.tgId == chatId)
-    bot.sendMessage(tgId, `流量：${user.trafficNum}G;余额：${rows[i].balTraffic}G;开始时间：${user.crteTime};期限：${user.days}(天)`);
+    bot.sendMessage(chatId, `流量：${user.trafficNum}G;余额：${user.balTraffic}G;开始时间：${user.crteTime};期限：${user.days}(天)`);
   });
 });
 
@@ -325,7 +325,9 @@ function getAllRules(tgId) {
       `
     })
     // console.log(msg)
-    bot.sendMessage(tgId, msg, {parse_mode: 'Markdown'})
+    if (msg) {
+      bot.sendMessage(tgId, msg, {parse_mode: 'Markdown'})
+    }
   })
 }
 
