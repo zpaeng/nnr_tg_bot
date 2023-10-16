@@ -1,5 +1,8 @@
 # 项目说明
 基于nodejs+sqlite，基于api在TG管理用户规则
+# 运行
+npm install
+npm start
 # 命令
 命令	|含义	|示例
 :-: | :-: | :-: 
