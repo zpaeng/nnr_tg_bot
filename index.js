@@ -1,3 +1,6 @@
+/**
+ * powerby zpaeng
+ */
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const SqliteDB = require('./dbUtils.js').SqliteDB;
@@ -215,7 +218,7 @@ function getServers(tgId) {
   })
 }
 
-bot.onText(/\/server/, msg => {
+bot.onText(/\/servers/, msg => {
   getServers(msg.chat.id)
 });
 
@@ -231,10 +234,10 @@ function crteRule(sid, remote, rport, type, tgId) {
     'type': type,
     'name': tgId + ' ' + remote
   }
-  console.log(params)
+  // console.log(params)
   axios.post(api + '/api/rules/add', params).then(res => {
     const {status, data} = res.data
-    console.log(data)
+    // console.log(data)
     if (data) {
       insertRule(tgId, data.rid)
       bot.sendMessage(tgId, '规则id: `'+ data.rid + '`;节点地址: `' + data.host + '`;节点端口: `' + data.port + '`', {parse_mode: 'Markdown'});
@@ -285,7 +288,7 @@ function getAllRules(tgId) {
     }
     let msg = ''
     arr.forEach(item => {
-      msg += '规则id: `'+ item.rid + '`;节点地址: `' + item.host + '`;节点端口: `' + item.port + '`;消耗流量: ' + item.traffic + 'B'
+      msg += '规则id: `'+ item.rid + '`;节点地址: `' + item.host + '`;节点端口: `' + item.port + '`;消耗流量: ' + item.traffic + 'B;名称: ' + item.name
       msg += `
       `
     })
@@ -342,7 +345,3 @@ bot.onText(/\/delrule (.+)/, (msg, match) => {
   }
   delRule(chatId, resp)
 });
-// insertRule(tgAdminId, 'bdcea4d3c4e0cdcc0edf06fc4fa2c959')
-// listRule(tgAdminId).then(rows => {
-//   console.log(rows)
-// })
