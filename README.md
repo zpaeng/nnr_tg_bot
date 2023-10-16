@@ -8,8 +8,10 @@ tg_token|tg机器人token
 nnr_token|nnr Api token
 tg_admin_id|管理账户TGid
 # 运行
+```
 npm install
 npm start
+```
 # 命令
 命令	|含义	|示例
 :-: | :-: | :-: 
