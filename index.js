@@ -229,7 +229,7 @@ function crteRule(sid, remote, rport, type, tgId) {
     'remote': remote,
     'rport': parseInt(rport),
     'type': type,
-    'name': tgId
+    'name': tgId + ' ' + remote
   }
   console.log(params)
   axios.post(api + '/api/rules/add', params).then(res => {
