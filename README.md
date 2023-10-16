@@ -1,5 +1,12 @@
 # 项目说明
 基于nodejs+sqlite，基于api在TG管理用户规则
+# 使用
+将config.json填充完之后再运行项目
+字段	|含义	
+:-: | :-: 
+tg_token|tg机器人token
+nnr_token|nnr Api token
+tg_admin_id|管理账户TGid
 # 运行
 npm install
 npm start

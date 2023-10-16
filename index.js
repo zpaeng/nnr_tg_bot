@@ -3,14 +3,18 @@
  */
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
+const { readJson } = require('./readJson.js');
+
+const api = 'https://nnr.moe';
+
 const SqliteDB = require('./dbUtils.js').SqliteDB;
 const file = "./nnr.db";
 const sqliteDB = new SqliteDB(file);
 
-const token = '6455433215:AAE7yRoXk_O3T3XcEvfWfjiQULKi3rsWGXo';
-const api = 'https://nnr.moe';
-const nnr_token = 'd391b316-634b-4237-9fef-4f8e86c01a32';
-const tgAdminId = '1954991283';
+const config = readJson('./config.json')
+const token = config.tg_token;
+const nnr_token = config.nnr_token;
+const tgAdminId = config.tg_admin_id;
 
 /// create table.
   var createTileTableSql = "create table if not exists tg_user(tg_id varchar(64) PRIMARY KEY, is_admin CHAR(1) default '0', traffic_num REAL, crte_time varchar(64), days INTEGER);";
