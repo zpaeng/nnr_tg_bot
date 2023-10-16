@@ -1,5 +1,5 @@
 # 项目说明
-基于nodejs+sqlite，基于api在TG管理用户规则
+基于nodejs+sqlite，基于nnr api在TG管理用户规则
 # 使用
 将config.json填充完之后再运行项目
 字段	|含义	
