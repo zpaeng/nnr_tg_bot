@@ -1,5 +1,5 @@
 # 项目说明
-基于nodejs+sqlite，用于api管理用户规则
+基于nodejs+sqlite，基于api在TG管理用户规则
 # 命令
 命令	|含义	|示例
 :-: | :-: | :-: 
