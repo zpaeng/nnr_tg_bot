@@ -4,6 +4,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const { readJson } = require('./readJson.js');
+const moment = require('moment');
 
 const api = 'https://nnr.moe';
 
@@ -17,7 +18,7 @@ const nnr_token = config.nnr_token;
 const tgAdminId = config.tg_admin_id;
 
 /// create table.
-  var createTileTableSql = "create table if not exists tg_user(tg_id varchar(64) PRIMARY KEY, is_admin CHAR(1) default '0', traffic_num REAL, crte_time varchar(64), days INTEGER);";
+  var createTileTableSql = "create table if not exists tg_user(tg_id varchar(64) PRIMARY KEY, is_admin CHAR(1) default '0', traffic_num REAL, bal_traffic REAL, crte_time varchar(64), days INTEGER);";
   var createLabelTableSql = "create table if not exists rule_relate(rule_relate_id INTEGER PRIMARY KEY autoincrement, tg_id varchar(64), rule_id varchar(64));";
   sqliteDB.createTable(createTileTableSql);
   sqliteDB.createTable(createLabelTableSql);
@@ -55,7 +56,7 @@ function dataAdminDeal(objects){
 insertAdmin()
 
 function inserUser(tgId, trafficNum, crteTime, days) {
-  let sql = `insert into tg_user(tg_id, traffic_num, crte_time, days) values( ${tgId}, ${trafficNum}, '${crteTime}', ${days})`;
+  let sql = `insert into tg_user(tg_id, traffic_num, bal_traffic, crte_time, days) values( ${tgId}, ${trafficNum}, ${trafficNum}, '${crteTime}', ${days})`;
   sqliteDB.executeSql(sql)
 }
 
@@ -63,12 +64,20 @@ function updateUser(tgId, trafficNum, crteTime, days) {
   sqliteDB.executeSql(`update tg_user set traffic_num=${trafficNum}, crte_time='${crteTime}', days=${days} where tg_id=${tgId}`);
 }
 
+function resetUser(tgId, crteTime) {
+  sqliteDB.executeSql(`update tg_user set crte_time='${crteTime}', bal_traffic=traffic_num where tg_id=${tgId}`);
+}
+
+function useTraffic(tgId, balTraffic) {
+  sqliteDB.executeSql(`update tg_user set bal_traffic=${balTraffic} where tg_id=${tgId}`);
+}
+
 function deleteUser(tgId) {
   sqliteDB.executeSql(`delete from tg_user where tg_id=${tgId}`);
 }
 
 function listUser(tgId) {
-  let sql = `select tg_id tgId, is_admin isAdmin, traffic_num trafficNum, datetime(crte_time) crteTime, days from tg_user where is_admin = '0'`;
+  let sql = `select tg_id tgId, is_admin isAdmin, traffic_num trafficNum, bal_traffic balTraffic, datetime(crte_time) crteTime, days from tg_user where is_admin = '0'`;
   if (tgId) {
     sql += ` and tg_id = ${tgId}`
   }
@@ -103,7 +112,7 @@ function dataDealUserList(tgId, rows) {
  }
  for(var i = 0; i < rows.length; ++i){
         //  console.log(rows[i]);
-         msg += `Tg id: ${rows[i].tgId};流量：${rows[i].trafficNum}G;开始时间：${rows[i].crteTime};期限：${rows[i].days}(天)
+         msg += `Tg id: ${rows[i].tgId};流量：${rows[i].trafficNum}G;余额：${rows[i].balTraffic}G;开始时间：${rows[i].crteTime};期限：${rows[i].days}(天)
 `
      }
   bot.sendMessage(tgId, msg, {parse_mode: 'html'});
@@ -120,7 +129,8 @@ bot.onText(/\/gettg/, function onLoveText(msg) {
 
 bot.onText(/\/usertemp/, msg => {
   bot.sendMessage(msg.chat.id, '增加用户模板：TGid+流量(G)+开始时间+天数(`\/adduser 19542314+300+2023-10-13 14:28:00+30`)', {parse_mode: 'Markdown'});
-  bot.sendMessage(msg.chat.id, '修改用户模板：TGid+流量(G)+开始时间+天数(`\/edituser 19542314+300+2023-10-13 14:28:00+30`)', {parse_mode: 'Markdown'});
+  // bot.sendMessage(msg.chat.id, '修改用户模板：TGid+流量(G)+开始时间+天数(`\/edituser 19542314+300+2023-10-13 14:28:00+30`)', {parse_mode: 'Markdown'});
+  bot.sendMessage(msg.chat.id, '重置用户模板：TGid(`\/resetuser 19542314`)', {parse_mode: 'Markdown'});
   bot.sendMessage(msg.chat.id, '删除用户模板：TGid(`\/deluser 19542314`)', {parse_mode: 'Markdown'});
 });
 
@@ -151,26 +161,43 @@ bot.onText(/\/adduser (.+)/, (msg, match) => {
   });
 });
 
-bot.onText(/\/edituser (.+)/, (msg, match) => {
+bot.onText(/\/resetuser (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
   const resp = match[1];
   if (chatId != tgAdminId) {
-    bot.sendMessage(chatId, '非管理员，无法修改');
+    bot.sendMessage(chatId, '非管理员，无法刷新流量');
     return
   }
-  let arr = resp.split('+');
-  if(arr.length != 4 || !arr[0] || !arr[1] || !arr[2] || !arr[3]) {
+  if(resp) {
     bot.sendMessage(chatId, '格式错误');
     return
   }
-  // console.log(arr)
-  updateUser(arr[0], arr[1], arr[2], arr[3]);
+  resetUser(chatId, moment().format('YYYY-MM-DD HH:mm:ss'))
   listUser().then(rows => {
-    // console.log(chatId)
-    // console.log(rows)
     dataDealUserList(chatId, rows);
   });
 });
+
+// bot.onText(/\/edituser (.+)/, (msg, match) => {
+//   const chatId = msg.chat.id;
+//   const resp = match[1];
+//   if (chatId != tgAdminId) {
+//     bot.sendMessage(chatId, '非管理员，无法修改');
+//     return
+//   }
+//   let arr = resp.split('+');
+//   if(arr.length != 4 || !arr[0] || !arr[1] || !arr[2] || !arr[3]) {
+//     bot.sendMessage(chatId, '格式错误');
+//     return
+//   }
+//   // console.log(arr)
+//   updateUser(arr[0], arr[1], arr[2], arr[3]);
+//   listUser().then(rows => {
+//     // console.log(chatId)
+//     // console.log(rows)
+//     dataDealUserList(chatId, rows);
+//   });
+// });
 
 bot.onText(/\/deluser (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
@@ -197,7 +224,7 @@ bot.onText(/\/traffic/, msg => {
   const chatId = msg.chat.id;
   listUser().then(rows => {
     let user = rows.find(row => row.tgId == chatId)
-    bot.sendMessage(tgId, `流量：${user.trafficNum}G;开始时间：${user.crteTime};期限：${user.days}(天)`);
+    bot.sendMessage(tgId, `流量：${user.trafficNum}G;余额：${rows[i].balTraffic}G;开始时间：${user.crteTime};期限：${user.days}(天)`);
   });
 });
 
@@ -273,6 +300,7 @@ function getAllRules(tgId) {
   axios.post(api + '/api/rules/').then(async res => {
     const {status, data} = res.data
     let arr = data;
+    // console.log(arr)
     if (tgId) {
       await listRule(tgId).then(rows => {
         let ruleArr = []
@@ -349,3 +377,86 @@ bot.onText(/\/delrule (.+)/, (msg, match) => {
   }
   delRule(chatId, resp)
 });
+
+async function timeRules() {
+  let arr = []
+  await axios.post(api + '/api/rules/').then(res => {
+    const {status, data} = res.data
+    arr = data; 
+  })
+  return arr
+}
+
+async function timeUser() {
+  let arr = []
+  await listUser().then(rows => {
+    if (rows && rows.length > 0) {
+      arr = rows
+    }
+  })
+  return arr
+}
+
+async function timeUserRuleRelate() {
+  let arr = []
+  await listRule().then(rows => {
+    if (rows && rows.length > 0) {
+      arr = rows
+    }
+  })
+  return arr
+}
+
+function timeDelRule(tgId, ruleId) {
+  let params = {
+    'rid': ruleId
+  }
+  axios.post(api + '/api/rules/del', params).then(res => {
+    const {status, data} = res.data
+    if (data) {
+      deleteRule(tgId, ruleId)
+    }
+  })
+}
+
+async function timeTraffic() {
+  let ruleArr = await timeRules()
+  let userArr = await timeUser()
+  let urRelateArr = await timeUserRuleRelate()
+  userArr.forEach(item => {
+    let ruleIdArr = []
+    urRelateArr.forEach(ur => {
+      if (item.tgId == ur.tgId) {
+        ruleIdArr.push(ur.ruleId)
+      }
+    })
+    if (ruleIdArr.length > 0) {
+      let arr = []
+      ruleArr.forEach(rule => {
+        if (ruleIdArr.includes(rule.rid)) {
+          arr.push(rule)
+        }
+      })
+      if (arr.length > 0) {
+        let traffic = 0
+        arr.forEach(tra => {
+          traffic += tra.traffic
+        })
+        let balTraffic = Number(item.trafficNum) - traffic/1024/1024/1024
+        if (balTraffic > 0) {
+          useTraffic(item.tgId, balTraffic)
+        } else {
+          useTraffic(item.tgId, 0)
+          arr.forEach(tra => {
+            timeDelRule(item.tgId, tra.rid)
+          })
+          bot.sendMessage(tgAdminId, `TGid: ${item.tgId}流量已用完，请及时处理`, {parse_mode: 'Markdown'});
+        }
+      }
+    }
+  })
+}
+
+setInterval(() => {
+  timeTraffic()
+}, 1000)

@@ -43,6 +43,7 @@
  DB.SqliteDB.prototype.queryData = function(sql){
     return new Promise((resolve, reject) => {
         DB.db.all(sql, function(err, rows){
+            // console.log(sql)
           if (err) {
             DB.printErrorInfo(err);
             console.log(err)
@@ -56,7 +57,7 @@
   
  DB.SqliteDB.prototype.executeSql = function(sql){
      DB.db.run(sql, function(err){
-        console.log(sql)
+        // console.log(sql)
          if(null != err){
              DB.printErrorInfo(err);
          }
