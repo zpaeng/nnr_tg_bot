@@ -392,8 +392,10 @@ async function delRule(tgId, ruleId) {
   await axios.post(api + '/api/rules/get', params).then(resp => {
     const {status, data} = resp.data
     listUser(tgId).then(rows => {
-      let timeTraffic = Number(rows[0].timeTraffic || rows[0].trafficNum) - (data.traffic || 0)/1024/1024/1024
-      updateTimeTraffic(tgId, timeTraffic)
+      if (rows && rows.length > 0) {
+        let timeTraffic = Number(rows[0].timeTraffic || rows[0].trafficNum) - (data.traffic || 0)/1024/1024/1024
+        updateTimeTraffic(tgId, timeTraffic)
+      }
     })
   })
   await axios.post(api + '/api/rules/del', params).then(res => {
