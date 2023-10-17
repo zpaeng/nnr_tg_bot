@@ -509,7 +509,11 @@ async function timeTraffic() {
 function intervalFun() {
   if (scheduleFlag == '1') {
     setInterval(() => {
-      timeTraffic()
+      try {
+        timeTraffic()
+      } catch (err) {
+        console.log(err)
+      }
     }, 60*1000)
   }
 }
