@@ -79,7 +79,7 @@ function updateUser(tgId, trafficNum, crteTime, days) {
 }
 
 function resetUser(tgId, crteTime) {
-  sqliteDB.executeSql(`update tg_user set crte_time='${crteTime}', bal_traffic=traffic_num where tg_id=${tgId}`);
+  sqliteDB.executeSql(`update tg_user set crte_time='${crteTime}', bal_traffic=traffic_num, time_traffic=null where tg_id=${tgId}`);
 }
 
 function useTraffic(tgId, balTraffic) {
@@ -186,6 +186,10 @@ bot.onText(/\/resetuser (.+)/, async (msg, match) => {
     bot.sendMessage(chatId, '非管理员，无法刷新流量');
     return
   }
+  if (resp == tgAdminId) {
+    bot.sendMessage(chatId, '管理员无需刷新自己流量');
+    return
+  }
   if(!resp) {
     bot.sendMessage(chatId, '格式错误');
     return
@@ -225,6 +229,10 @@ bot.onText(/\/deluser (.+)/, (msg, match) => {
     bot.sendMessage(chatId, '非管理员，无法删除');
     return
   }
+  if (resp == tgAdminId) {
+    bot.sendMessage(chatId, '管理员无法删除自己');
+    return
+  }
   if(!resp) {
     bot.sendMessage(chatId, '格式错误');
     return
@@ -253,8 +261,15 @@ bot.onText(/\/alluser/, msg => {
 bot.onText(/\/traffic/, msg => {
   const chatId = msg.chat.id;
   listUser().then(rows => {
-    let user = rows.find(row => row.tgId == chatId)
-    bot.sendMessage(chatId, `流量：${user.trafficNum}G;余额：${user.balTraffic}G;开始时间：${user.crteTime};期限：${user.days}(天)`);
+    if (tgAdminId != chatId) {
+      let user = rows.find(row => row.tgId == chatId)
+      bot.sendMessage(chatId, `流量：${user.trafficNum}G;余额：${user.balTraffic}G;开始时间：${user.crteTime};期限：${user.days}(天)`);
+    } else {
+      rows.forEach(item => {
+        bot.sendMessage(chatId, `Tgid: ${item.tgId};流量：${item.trafficNum}G;余额：${item.balTraffic}G;开始时间：${item.crteTime};期限：${item.days}(天)`);
+      })
+    }
+    
   });
 });
 
