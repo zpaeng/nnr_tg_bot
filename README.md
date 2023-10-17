@@ -7,6 +7,7 @@
 tg_token|tg机器人token
 nnr_token|nnr Api token
 tg_admin_id|管理账户TGid
+schedule_flag|流量扣除定时开关(0:关闭，1:开启)
 # 运行
 ```
 npm install

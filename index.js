@@ -16,6 +16,7 @@ const config = readJson('./config.json')
 const token = config.tg_token;
 const nnr_token = config.nnr_token;
 const tgAdminId = config.tg_admin_id;
+const scheduleFlag = config.schedule_flag;
 
 /// create table.
   var createTileTableSql = "create table if not exists tg_user(tg_id varchar(64) PRIMARY KEY, is_admin CHAR(1) default '0', traffic_num REAL, bal_traffic REAL, crte_time varchar(64), days INTEGER);";
@@ -38,6 +39,19 @@ axios.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
+function dbUpdate(tableName, tableColumn) {
+  let querySql = `select * from sqlite_master where type='table' and name='${tableName}' and sql like '%${tableColumn}%'`
+  sqliteDB.queryData(querySql).then(rows => {
+    // console.log(rows)
+    if (!rows || rows.length == 0) {
+      let alterSql = `ALTER TABLE ${tableName} ADD COLUMN ${tableColumn} REAL`
+      sqliteDB.executeSql(alterSql)
+    }
+  })
+}
+
+dbUpdate('tg_user', 'time_traffic')
 
 function insertAdmin() {
   sqliteDB.queryData(`select * from tg_user where tg_id = ${tgAdminId}`).then((rows) => {
@@ -72,12 +86,16 @@ function useTraffic(tgId, balTraffic) {
   sqliteDB.executeSql(`update tg_user set bal_traffic=${balTraffic} where tg_id=${tgId}`);
 }
 
+function updateTimeTraffic(tgId, timeTraffic) {
+  sqliteDB.executeSql(`update tg_user set time_traffic=${timeTraffic} where tg_id=${tgId}`);
+}
+
 function deleteUser(tgId) {
   sqliteDB.executeSql(`delete from tg_user where tg_id=${tgId}`);
 }
 
 function listUser(tgId) {
-  let sql = `select tg_id tgId, is_admin isAdmin, traffic_num trafficNum, bal_traffic balTraffic, datetime(crte_time) crteTime, days from tg_user where is_admin = '0'`;
+  let sql = `select tg_id tgId, is_admin isAdmin, traffic_num trafficNum, time_traffic timeTraffic, bal_traffic balTraffic, datetime(crte_time) crteTime, days from tg_user where is_admin = '0'`;
   if (tgId) {
     sql += ` and tg_id = ${tgId}`
   }
@@ -348,7 +366,7 @@ bot.onText(/\/rules/, msg => {
   getAllRules(chatId)
 });
 
-function delRule(tgId, ruleId) {
+async function delRule(tgId, ruleId) {
   if (!userExist(tgId)) {
     bot.sendMessage(tgId, '禁止操作')
     return
@@ -356,7 +374,14 @@ function delRule(tgId, ruleId) {
   let params = {
     'rid': ruleId
   }
-  axios.post(api + '/api/rules/del', params).then(res => {
+  await axios.post(api + '/api/rules/get', params).then(resp => {
+    const {status, data} = resp.data
+    listUser(tgId).then(rows => {
+      let timeTraffic = Number(rows[0].timeTraffic || rows[0].trafficNum) - (data.traffic || 0)/1024/1024/1024
+      updateTimeTraffic(tgId, timeTraffic)
+    })
+  })
+  await axios.post(api + '/api/rules/del', params).then(res => {
     const {status, data} = res.data
     if (data) {
       deleteRule(tgId, ruleId)
@@ -452,6 +477,7 @@ async function timeTraffic() {
         ruleIdArr.forEach(rui => {
           timeDelRule(item.tgId, rui)
         })
+        bot.sendMessage(tgAdminId, `TGid: ${item.tgId}已失效，请及时续期`, {parse_mode: 'Markdown'});
         continue
       }
       let arr = []
@@ -465,7 +491,7 @@ async function timeTraffic() {
         arr.forEach(tra => {
           traffic += tra.traffic
         })
-        let balTraffic = Number(item.trafficNum) - traffic/1024/1024/1024
+        let balTraffic = Number(item.timeTraffic || item.trafficNum) - traffic/1024/1024/1024
         if (balTraffic > 0) {
           useTraffic(item.tgId, balTraffic)
         } else {
@@ -480,6 +506,12 @@ async function timeTraffic() {
   }
 }
 
-setInterval(() => {
-  timeTraffic()
-}, 1000)
+function intervalFun() {
+  if (scheduleFlag == '1') {
+    setInterval(() => {
+      timeTraffic()
+    }, 60*1000)
+  }
+}
+
+intervalFun()
